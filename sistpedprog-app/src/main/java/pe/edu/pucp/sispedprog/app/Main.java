@@ -1,22 +1,33 @@
 package pe.edu.pucp.sispedprog.app;
 
 import pe.edu.pucp.sispedprog.bl.ClienteBL;
+import pe.edu.pucp.sispedprog.bl.PedidoBL;
 import pe.edu.pucp.sispedprog.bl.exception.BusinessLogicException;
 import pe.edu.pucp.sispedprog.bl.impl.ClienteBLImpl;
+import pe.edu.pucp.sispedprog.bl.impl.PedidoBLImpl;
 import pe.edu.pucp.sispedprog.dao.PlatoDAO;
 import pe.edu.pucp.sispedprog.dao.impl.PlatoDAOImpl;
 import pe.edu.pucp.sispedprog.model.Cliente;
+import pe.edu.pucp.sispedprog.model.DetallePedido;
+import pe.edu.pucp.sispedprog.model.Pedido;
 import pe.edu.pucp.sispedprog.model.Plato;
 
+import java.util.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) throws BusinessLogicException {
+    public static void main(String[] args) throws BusinessLogicException, ParseException {
         boolean centinela=true;
         int opcion;
         Scanner scanner = new Scanner(System.in);
         ClienteBL clienteBL = new ClienteBLImpl();
+        PedidoBL pedidoBL = new PedidoBLImpl();
         PlatoDAO platoDAO = new PlatoDAOImpl();
 
         while (centinela){
@@ -27,6 +38,7 @@ public class Main {
             System.out.println("2. Buscar cliente");
             System.out.println("3. Registrar plato");
             System.out.println("4. Listar plato");
+            System.out.println("5. Registrar Pedido");
             System.out.println("6. Salir");
             System.out.println("Seleccione una opción: ");
             opcion = Integer.parseInt(scanner.nextLine());
@@ -45,6 +57,10 @@ public class Main {
                 }
                 case 4:{
                     listarPlatos(platoDAO);
+                    break;
+                }
+                case 5:{
+                    registrarPedido(scanner, clienteBL, pedidoBL, platoDAO);
                     break;
                 }
             }
@@ -96,7 +112,7 @@ public class Main {
     public static void buscarCliente(Scanner scanner,ClienteBL clienteBL) throws BusinessLogicException {
         int id;
         System.out.println();
-        System.out.println("======REGISTRAR CLIENTE======");
+        System.out.println("======BUSCAR CLIENTE======");
         System.out.println("ID a buscar: ");
         id = Integer.parseInt(scanner.nextLine());
         Cliente cliente = clienteBL.buscar(id);
@@ -106,4 +122,34 @@ public class Main {
         System.out.println("Apellido Paterno: " + cliente.getApellidoPaterno());
     }
 
+    public static void registrarPedido(Scanner scanner,ClienteBL clienteBL, PedidoBL pedidoBL, PlatoDAO platoDAO) throws BusinessLogicException, ParseException {
+        /*OJO, debería ser PlatoBL, solo que aún no lo hemos hecho, por eso uso el PlatoDAO*/
+        int idCliente, idPlato, cantidad;
+        System.out.println();
+        System.out.println("======REGISTRAR PEDIDO======");
+        System.out.println("Ingrese el ID Cliente: ");
+        idCliente = Integer.parseInt(scanner.nextLine());
+        Cliente cliente = clienteBL.buscar(idCliente);
+        boolean centinela = true;
+        List<DetallePedido> listaDetallePedidos = new ArrayList<DetallePedido>();
+        while (centinela){
+            System.out.println("Ingrese el ID del Plato a pedir: ");
+            idPlato = Integer.parseInt(scanner.nextLine());
+            Plato plato = platoDAO.load(idPlato);
+            System.out.println("Ingrese la cantidad de platos a pedir: ");
+            cantidad = Integer.parseInt(scanner.nextLine());
+            DetallePedido detallePedido = new DetallePedido(plato,cantidad);
+            listaDetallePedidos.add(detallePedido);
+            System.out.println("Desea agregar otro plato?: ");
+            String rpta = scanner.nextLine();
+            if (rpta=="No"){
+                centinela = false;
+            }
+        }
+        SimpleDateFormat formato = new SimpleDateFormat("dd/MM/yyyy");
+        Date fechaActual = formato.parse("17/09/2026");
+        Pedido pedido = new Pedido(0,fechaActual,cliente,listaDetallePedidos,"Registrado");
+        pedido = pedidoBL.registrarPedido(pedido);
+        System.out.println("El pedido se ha registrado con éxito");
+    }
 }
